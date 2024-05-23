@@ -254,10 +254,10 @@ def capture_imagem_point_by_point(master, quant_loop, x_metros, seg_parado, y_me
 # Função principal que inicializa a conexão e o controle do drone
 def main():
     # Conexão inicial com o drone via protocolo TCP
-    master = mavutil.mavlink_connection('tcp:192.168.0.105:5760')
+    #master = mavutil.mavlink_connection('tcp:192.168.0.105:5760')
 
     # Conexão inicial com o drone via protocolo UDP. Versão simulada com mavproxy e dronekit-sitl
-    #master = mavutil.mavlink_connection('udpin:127.0.0.1:14551')
+    master = mavutil.mavlink_connection('udpin:127.0.0.1:14551')
 
     # Conexão com drone via porta serial onde o dispositivo de telemetria está conectado.
     #master = mavutil.mavlink_connection(device="/dev/ttyUSB0", baud=57600 )  
