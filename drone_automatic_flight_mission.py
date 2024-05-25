@@ -70,13 +70,16 @@ def takeoff(master, altitude):
                                     mavutil.mavlink.MAV_DATA_STREAM_ALL, 4, 1)
     # Aguarda alcançar a altitude segura
     while True:
-        msg = master.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
-        current_altitude = msg.relative_alt / 1000.0  # Convertendo de mm para metros
-        print(f"Altitude atual: {current_altitude}m")
+         
+        print(f"Altitude atual: {current_altitude(master)}m")
 
-        if current_altitude >= altitude * 0.95:  # Chega perto da altitude alvo
+        if current_altitude(master) >= altitude * 0.95:  # Chega perto da altitude alvo
             print("Altitude alvo alcançada.")
             break
+
+def current_altitude(master):
+    msg = master.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
+    return msg.relative_alt / 1000.0  # Convertendo de mm para metros
 
 # Função para comandar o pouso do drone
 def land(master):
@@ -86,7 +89,16 @@ def land(master):
         mavutil.mavlink.MAV_CMD_NAV_LAND,
         0, 0, 0, 0, 0, 0, 0, 0
     )
-
+    
+    while True:
+        print(current_altitude(master))
+        
+        print('Descendo... \n')
+        if current_altitude(master) < 1:
+            break; 
+        
+    print('Desceu com crtz')
+    
 # Função para desarmar o drone
 def disarm(master):
     print("Desarmando o drone.")
@@ -258,12 +270,13 @@ def main():
 
     # Conexão inicial com o drone via protocolo UDP. Versão simulada com mavproxy e dronekit-sitl
     master = mavutil.mavlink_connection('udpin:127.0.0.1:14551')
-
     # Conexão com drone via porta serial onde o dispositivo de telemetria está conectado.
-    #master = mavutil.mavlink_connection(device="/dev/ttyUSB0", baud=57600 )  
+    # master = mavutil.mavlink_connection(device="/dev/ttyUSB0", baud=57600 )  
 
     # Checagem se a conexão com o drone foi estabelecida
     if master.wait_heartbeat(timeout=5):
+        print(f"Altura atual inicial: {current_altitude(master)}m")
+        
         print("Conexão estabelecida com sucesso.")
     else:
         print("Falha ao conectar com o drone.")
@@ -314,10 +327,17 @@ def main():
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
     except KeyboardInterrupt:
+        if(current_altitude(master) > 9):
+            land(master)
+            disarm(master)
+            print('desceu')
+        
         print("Simulação interrompida pelo usuário.")
     finally:
         cap.release()
         cv2.destroyAllWindows()
+        
+       
 
 if __name__ == "__main__":
     main()
