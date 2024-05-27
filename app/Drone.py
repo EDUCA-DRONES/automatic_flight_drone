@@ -131,32 +131,84 @@ class Drone:
                     print("Still waiting for GUIDED mode confirmation...")
                     print(f"Received command: {msg.command} | Result: {msg.result}")
    
+    def get_gps_position(self):
+        """
+        Retrieves the current GPS position (latitude, longitude, altitude).
+        """
+        self.conn.mav.request_data_stream_send(
+            self.conn.target_system, self.conn.target_component,
+            mavutil.mavlink.MAV_DATA_STREAM_ALL, 1, 1
+        )
+        msg = self.conn.recv_match(type='GLOBAL_POSITION_INT', blocking=True, timeout=5)
+        if msg:
+            lat = msg.lat / 1e7
+            lon = msg.lon / 1e7
+            alt = msg.alt / 1e3
+            return lat, lon, alt
+        else:
+            raise Exception("Failed to retrieve GPS position")
+
+
     def set_velocity_body(self, vx, vy, vz):
         """
         Sets the velocity of the drone in the body frame.
         """
-        msg = self.conn.message_factory.set_position_target_local_ned_encode(
-            0,       # time_boot_ms (not used)
-            0, 0,    # target system, target component
-            mavutil.mavlink.MAV_FRAME_BODY_NED, # frame
-            0b0000111111000111, # type_mask (only speeds enabled)
-            0, 0, 0, # x, y, z positions (not used)
-            vx, vy, vz, # x, y, z velocity in m/s
-            0, 0, 0, # x, y, z acceleration (not supported yet, ignored in GCS_Mavlink)
-            0, 0)    # yaw, yaw_rate (not supported yet, ignored in GCS_Mavlink)
-        self.conn.send_mavlink(msg)
-        self.conn.flush()
+        try:
+            # Create the MAVLink message directly
+            msg = mavutil.mavlink.MAVLink_set_position_target_local_ned_message(
+                0,  # time_boot_ms (not used)
+                self.conn.target_system,  # target system
+                self.conn.target_component,  # target component
+                mavutil.mavlink.MAV_FRAME_BODY_NED,  # frame
+                0b0000111111000111,  # type_mask (only speeds enabled)
+                0, 0, 0,  # x, y, z positions (not used)
+                vx, vy, vz,  # x, y, z velocity in m/s
+                0, 0, 0,  # x, y, z acceleration (not supported yet, ignored in GCS_Mavlink)
+                0, 0  # yaw, yaw_rate (not supported yet, ignored in GCS_Mavlink)
+            )
+            # Send the MAVLink message
+            self.conn.mav.send(msg)
+            print(f"Velocity command sent: vx={vx}, vy={vy}, vz={vz}")
+        except Exception as e:
+            print(f"Failed to send velocity command: {e}")
 
-    def move_north(self, distance, velocity=1.0):
+    def move(self, direction, distance, velocity=20.0):
         """
-        Moves the drone north by the specified distance at the specified velocity.
+        Moves the drone in the specified direction by the specified distance at the specified velocity.
         """
-        print(f"Moving north for {distance} meters at {velocity} m/s")
+        print(f"Moving {direction} for {distance} meters at {velocity} m/s")
+        lat, lon, alt = self.get_gps_position()
+        print(f"Current GPS position: Latitude={lat}, Longitude={lon}, Altitude={alt}")
+        
         duration = distance / velocity
-        self.set_velocity_body(velocity, 0, 0)
+        
+        if direction == 'north':
+            self.set_velocity_body(velocity, 0, 0)
+        elif direction == 'south':
+            self.set_velocity_body(-velocity, 0, 0)
+        elif direction == 'east':
+            self.set_velocity_body(0, velocity, 0)
+        elif direction == 'west':
+            self.set_velocity_body(0, -velocity, 0)
+        
         time.sleep(duration)
         self.set_velocity_body(0, 0, 0)
+        
+        lat, lon, alt = self.get_gps_position()
+        print(f"New GPS position: Latitude={lat}, Longitude={lon}, Altitude={alt}")
         print("Movement complete")
+    
+    def move_north(self, distance, velocity=20.0):
+        self.move('north', distance, velocity)
+    
+    def move_south(self, distance, velocity=20.0):
+        self.move('south', distance, velocity)
+    
+    def move_east(self, distance, velocity=20.0):
+        self.move('east', distance, velocity)
+    
+    def move_west(self, distance, velocity=20.0):
+        self.move('west', distance, velocity)
 
     def move_direction(self, north, east, down):
         """
