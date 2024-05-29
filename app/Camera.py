@@ -18,13 +18,26 @@ class CameraRTSP(CameraConnection):
 class CameraComputer(CameraConnection):
     source = '0'
 
+class CameraIMX519(CameraConnection):
+    source = 'tcp://192.168.0.111:8554'
+
+class CameraESP32CAM(CameraConnection):
+    source = 'http://192.168.0.108:81/stream'
+
+class CameraAnalog(CameraConnection):
+    source = '/dev/video2'
+
 class CameraConnectionFactory():
     
     @staticmethod
     def create(type) -> CameraConnection: 
         cameras = {
             'rtsp' : CameraRTSP,
-            'computer': CameraComputer
+            'computer': CameraComputer,
+            'imx': CameraIMX519,
+            'analog': CameraAnalog,
+            'esp32': CameraESP32CAM
+
         }
            
         return cameras[type]
@@ -44,7 +57,9 @@ class Camera:
         
         if not self.cap.isOpened():
             print("Falha ao abrir a captura de vídeo.")
+
         
     def read_capture(self):
         self.ret, self.frame = self.cap.read()
+
        

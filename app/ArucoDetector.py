@@ -21,6 +21,11 @@ class ArucoDetector:
         aruco_params = aruco.DetectorParameters()
         corners, ids, rejected = aruco.detectMarkers(gray, aruco_dict, parameters=aruco_params)
         self.ids, self.corners = ids, corners if ids is not None else (None, None)
+
+        if self.ids is not None:
+            image = aruco.drawDetectedMarkers(image, corners, ids)
+
+        return image, ids, corners
     
     def go_to_aruco_direction(self, drone: Drone):
         distance_m = 100

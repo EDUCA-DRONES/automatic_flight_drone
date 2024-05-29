@@ -216,3 +216,23 @@ class Drone:
         """
         print(f"Moving NED for {north}m north, {east}m east, {down}m down")
         self.set_velocity_body(north, east, down)
+
+    def capture_images_and_metadata(cap, save_path, meta_path, num_images=3, pause_time=3):
+       
+        for i in range(num_images):
+            time.sleep(pause_time)  # Espera entre capturas
+
+            ret, frame = cap.read()
+            if ret:
+                timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+                image_filename = f"{save_path}/Image_{i+1}_{timestamp}.jpg"
+                cv2.imwrite(image_filename, frame)
+                print(f"Imagem {i+1} capturada e salva em: {image_filename}")
+
+                # Salvar metadados
+                metadata_filename = f"{meta_path}/Metadata_{i+1}_{timestamp}.txt"
+                with open(metadata_filename, 'w') as metafile:
+                    metafile.write(f"Timestamp: {timestamp}\n")
+                    metafile.write(f"Latitude: {latitude}\n")
+                    metafile.write(f"Longitude: {longitude}\n")
+                    metafile.write(f"Altitude: {altitude}m\n")

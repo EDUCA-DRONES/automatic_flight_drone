@@ -91,9 +91,9 @@ def land(master):
     )
     
     while True:
-        print(current_altitude(master))
+        print(f"{current_altitude(master)}m")
         
-        print('Descendo... \n')
+        print('Descendo...\n')
         if current_altitude(master) < 1:
             break; 
         
@@ -269,10 +269,10 @@ def main():
     #master = mavutil.mavlink_connection('tcp:192.168.0.105:5760')
 
     # Conexão inicial com o drone via protocolo UDP. Versão simulada com mavproxy e dronekit-sitl
-    master = mavutil.mavlink_connection('udpin:127.0.0.1:14551')
+    #master = mavutil.mavlink_connection('udpin:127.0.0.1:14551')
     # Conexão com drone via porta serial onde o dispositivo de telemetria está conectado.
-    # master = mavutil.mavlink_connection(device="/dev/ttyUSB0", baud=57600 )  
-
+    master = mavutil.mavlink_connection(device="/dev/ttyUSB0", baud=57600 )  
+    print("Tentando conectar ao drone... \n", master)
     # Checagem se a conexão com o drone foi estabelecida
     if master.wait_heartbeat(timeout=5):
         print(f"Altura atual inicial: {current_altitude(master)}m")
@@ -287,10 +287,18 @@ def main():
                                     mavutil.mavlink.MAV_DATA_STREAM_ALL, 4, 1)
 
     # Conexão via RTSP com a câmera acoplada ao drone
-    camera_rtsp_url = 'rtsp://admin:admin@192.168.0.105:554/11'
+    camera_rtsp_url = 'rtsp://admin:admin@192.168.0.100:554/11'
     
     # Inicialização da captura de vídeo via uma câmera local
-    cap = initialize_video_capture('0') # Substitua '0' por camera_rtsp_url para utilizar a câmera via RTSP
+    cap = initialize_video_capture(camera_rtsp_url) # Substitua '0' por camera_rtsp_url para utilizar a câmera via RTSP
+    
+    #HEIGHT_FIRST = 3 # 3 METROS
+    #HEIGHT_SECOND = 6 # 3 METROS
+    #HEIGHT_THIRD = 9 # 3 METROS
+    #HEIGHT_FOURTH = 12 # 3 METROS
+    #HEIGHT_FIFTH = 15 # 3 METROS
+
+    HEIGHT_DRONE = 3 # METROS
     try:
         # Loop principal para processamento de vídeo e detecção de ArUco
         while True:
@@ -303,7 +311,12 @@ def main():
                 if 33 in ids:
                     print("ArUco 33 detectado, alterando para modo GUIDED e preparando para decolagem...")
                     change_to_guided_mode(master)
-                    arm_and_takeoff(master, 10)
+                    arm_and_takeoff(master, HEIGHT_DRONE) 
+                    #arm_and_takeoff(master, HEIGHT_FIRST) #Primeiro teste
+                    #arm_and_takeoff(master, HEIGHT_SECOND) #Segundo teste
+                    #arm_and_takeoff(master, HEIGHT_THIRD) #Terceiro teste
+                    #arm_and_takeoff(master, HEIGHT_FOURTH) #Quarto teste
+                    #arm_and_takeoff(master, HEIGHT_FIFTH) #Quinto teste
 
                     # Definição e envio de waypoints
                     """waypoints = [
@@ -312,12 +325,12 @@ def main():
                         {"lat": -14.301602, "lon": -42.690346, "alt": 15}
                     ]"""
                     
-                    capture_imagem_point_by_point(master, 4, 6, 5, 2, 5, camera_rtsp_url)
+                    #capture_imagem_point_by_point(master, 4, 6, 5, 2, 5, camera_rtsp_url)
 
-                    while True:
-                        msg = master.recv_match(type='LOCAL_POSITION_NED', blocking=True)
-                        print(msg)
-                    time.sleep(1)
+                    #while True:
+                    #    msg = master.recv_match(type='LOCAL_POSITION_NED', blocking=True)
+                    #    print(msg)
+                    time.sleep(30)
 
                 elif 8 in ids:
                     print("ArUco 8 detectado, iniciando procedimentos de pouso...")
@@ -327,10 +340,10 @@ def main():
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
     except KeyboardInterrupt:
-        if(current_altitude(master) > 9):
+        if(current_altitude(master) > (HEIGHT_DRONE-1)):
             land(master)
             disarm(master)
-            print('desceu')
+            print('Desceu')
         
         print("Simulação interrompida pelo usuário.")
     finally:
