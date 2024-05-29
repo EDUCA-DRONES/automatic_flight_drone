@@ -9,10 +9,13 @@ class DroneConfig:
         
 class Drone:
     def __init__(self) -> None:
-        self.IP = '127.0.0.1'
-        self.URL = f'udpin:{self.IP}:14551'
+        #self.IP = '127.0.0.1'
+        #self.URL = f'udpin:{self.IP}:14551'
+        self.IP = '0.0.0.0'
+        self.baud = '57600'
+        self.URL = f'/dev/ttyUSB0'
         self.METER_CONVERTER = 1000.0
-        self.conn =  mavutil.mavlink_connection(self.URL)
+        self.conn =  mavutil.mavlink_connection(self.URL, self.baud)
         self.config = DroneConfig()
         self.velocity = 30
         

@@ -70,7 +70,7 @@ def main():
         return
     
      # Defina os tipos de câmera que você possui
-    camera_types = ['computer', 'imx', 'analog']
+    camera_types = ['rtsp', 'imx', 'esp32']
     cameras = {type: Camera() for type in camera_types}
 
     #camera = Camera()
@@ -90,13 +90,12 @@ def main():
         # Arma o drone
         drone.arm_drone()
 
-        # Define a altitude desejada
-        target_altitude = 3  # em metros
-        print("Altitude definida: 3 METROS")
+       
+        HEIGHT = 15
+        print(f"Altitude definida para {HEIGHT} METROS")
 
         # Decola para a altitude definida
-        drone.takeoff(target_altitude)
-        
+        drone.takeoff(HEIGHT)
 
         # Capturar imagens e metadados para cada tipo de câmera
         capture_images_and_metadata(drone, cameras, save_path, meta_path, aruco_detector, num_images=3, pause_time=1.5)

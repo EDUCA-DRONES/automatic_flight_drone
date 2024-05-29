@@ -19,7 +19,16 @@ def main():
             return
     '''
     
-    camera.initialize_video_capture('esp32')
+    #camera.initialize_video_capture('computer')
+
+    camera_types = ['imx' ]
+    cameras = {type: Camera() for type in camera_types}
+
+    for camera_type, camera in cameras.items():
+        print(f"Iniciando captura de imagens da câmera tipo: {camera_type}")
+        camera.initialize_video_capture(camera_type)
+        
+
     '''
     drone.solicit_telemetry()
     drone.change_to_guided_mode()

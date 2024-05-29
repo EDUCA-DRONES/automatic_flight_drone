@@ -13,13 +13,13 @@ class CameraConnection:
         return cv2.VideoCapture(int(self.source) if self.source.isdigit() else self.source)
         
 class CameraRTSP(CameraConnection):
-    source = 'rtsp://admin:admin@192.168.0.100:554/11'
+    source = 'rtsp://admin:admin@192.168.0.111:554/11'
 
 class CameraComputer(CameraConnection):
     source = '0'
 
 class CameraIMX519(CameraConnection):
-    source = 'tcp://192.168.0.111:8554'
+    source = 'tcp://192.168.0.101:8554'
 
 class CameraESP32CAM(CameraConnection):
     source = 'http://192.168.0.108:81/stream'
