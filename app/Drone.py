@@ -51,12 +51,18 @@ class Drone:
             mavutil.mavlink.MAV_DATA_STREAM_ALL, 4, 1
         )
         
+        repeat = 0
         while True:
+            repeat = 1 + repeat
             current_alt = self.current_altitude()
             print(f"Altitude atual: {current_alt}m")
 
             if current_alt >= target_altitude * 0.95: 
                 print("Altitude alvo alcançada.")
+                break
+            elif repeat > 30:
+                print('Tentativa de comunicação excedeu o limite de tentivas... Tentando novamente.')
+                self.ascend(target_altitude)
                 break
     
     def land(self):
@@ -150,7 +156,6 @@ class Drone:
             return lat, lon, alt
         else:
             raise Exception("Failed to retrieve GPS position")
-
 
     def set_velocity_body(self, vx, vy, vz):
         """

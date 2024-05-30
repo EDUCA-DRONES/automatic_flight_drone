@@ -24,7 +24,9 @@ def capture_images_in_alts(
     fileManger: FileManager, 
     aruco_detector: ArucoDetector, 
     cameras: dict):
+    
     for i in range(1,6):
+        
         HEIGHT = i*3
         print(f"Altitude definida para {HEIGHT} METROS")
         drone.ascend(HEIGHT)
@@ -43,7 +45,7 @@ def main():
         return
     
      # Defina os tipos de câmera que você possui
-    camera_types = ['computer']
+    camera_types = ['imx', 'rtsp', 'analog', 'esp32']
     cameras = {type: Camera() for type in camera_types}
 
     fileManger.create_base_dirs()

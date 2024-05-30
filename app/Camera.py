@@ -3,6 +3,7 @@ import cv2
 from app.Drone import Drone
 from app.FileManager import FileManager
 from app.ArucoDetector import ArucoDetector
+from app.Ssh import SSHConnection
 
 class CameraConnection:
     source = None
@@ -19,6 +20,17 @@ class CameraComputer(CameraConnection):
 
 class CameraIMX519(CameraConnection):
     source = 'tcp://192.168.0.101:8554'
+    
+    # def connection(self):
+        # host = '192.168.0.101'  # Substitua pelo endereço do seu servidor
+        # port = 22  # Porta SSH
+        # username = 'drone'  # Substitua pelo seu nome de usuário
+        # password = 'Dron3s'  # Substitua pela sua senha
+        # command = 'libcamera-vid -t 0 --inline --listen -o tcp://0.0.0.0:8554 --nopreview'
+
+        # sshConn = SSHConnection(host, port, username, password)
+        # sshConn.ssh_command(command)
+        # return CameraConnection.connection(self)
 
 class CameraESP32CAM(CameraConnection):
     source = 'http://192.168.0.108:81/stream'
@@ -53,7 +65,7 @@ class Camera:
         
         self.cap = camera.connection()
         
-        if not self.cap.isOpened():
+        if not self.cap or not self.cap.isOpened():
             print("Falha ao abrir a captura de vídeo.")
         
     def read_capture(self):
