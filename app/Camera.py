@@ -1,20 +1,14 @@
-from datetime import datetime
-import cv2
 import time
+import cv2
 from app.Drone import Drone
 from app.FileManager import FileManager
 from app.ArucoDetector import ArucoDetector
 
-class CameraPresenter:
-    def init_message(self):
-        print("Inicializando captura de vídeo...")
-
 class CameraConnection:
     source = None
-    presenter = CameraPresenter()
     
     def connection(self):
-        self.presenter.init_message()
+        print("Inicializando captura de vídeo...")
         return cv2.VideoCapture(int(self.source) if self.source.isdigit() else self.source)
         
 class CameraRTSP(CameraConnection):
@@ -49,8 +43,7 @@ class CameraConnectionFactory():
 
 class Camera:
     def __init__(self) -> None:
-        
-        self.presenter = CameraPresenter()
+      
         self.cap = None
         self.ret = None
         self.frame = None
@@ -70,7 +63,7 @@ class Camera:
     def capture_images_and_metadata(self, drone: Drone,  fileManager: FileManager, aruco_detector: ArucoDetector, alt, num_images=3, pause_time=3):
        
         for i in range(num_images):
-            # time.sleep(pause_time)  # Espera entre capturas
+            time.sleep(pause_time)  # Espera entre capturas
 
             ret, frame = self.cap.read()
             processed_image, _, __ = aruco_detector.detect_arucos(frame)

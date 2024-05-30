@@ -1,7 +1,3 @@
-import cv2
-from datetime import datetime
-import time
-from pymavlink import mavutil
 from app.Drone import Drone 
 from app.ArucoDetector import ArucoDetector
 from app.Camera import Camera
