@@ -1,7 +1,9 @@
+from datetime import datetime
 from math import cos, radians
+import cv2
 from pymavlink import mavutil
 import time 
-
+from app.DroneMoves import DroneMoveUPFactory
 
 class DroneConfig:
     def __init__(self) -> None:
@@ -9,13 +11,13 @@ class DroneConfig:
         
 class Drone:
     def __init__(self) -> None:
-        #self.IP = '127.0.0.1'
-        #self.URL = f'udpin:{self.IP}:14551'
+        self.IP = '127.0.0.1'
+        self.URL = f'udpin:{self.IP}:14551'
         self.IP = '0.0.0.0'
-        self.baud = '57600'
-        self.URL = f'/dev/ttyUSB0'
+        # self.baud = '57600'
+        # self.URL = f'/dev/ttyUSB0'
         self.METER_CONVERTER = 1000.0
-        self.conn =  mavutil.mavlink_connection(self.URL, self.baud)
+        self.conn =  mavutil.mavlink_connection(self.URL)
         self.config = DroneConfig()
         self.velocity = 30
         
@@ -26,9 +28,11 @@ class Drone:
         self.conn.mav.request_data_stream_send(self.conn.target_system, self.conn.target_component, mavutil.mavlink.MAV_DATA_STREAM_ALL, 4, 1)
         
     def current_altitude(self):
-        msg = self.conn.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
-        return msg.relative_alt / self.METER_CONVERTER   # Convertendo de mm para metros
-
+        msg = self.conn.recv_match(type='GLOBAL_POSITION_INT', blocking=True, timeout=2)
+        if msg:
+            return msg.relative_alt / self.METER_CONVERTER   # Convertendo de mm para metros
+        return 0
+    
     def arm_drone(self):
         print("Armando drone...")
         self.conn.mav.command_long_send(self.conn.target_system, self.conn.target_component, mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM, 0, 1, 0, 0, 0, 0, 0, 0)
@@ -38,24 +42,23 @@ class Drone:
             ack = msg.command == mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM and msg.result == 0
         print("Drone armado.")
     
-    def takeoff(self, altitude):
-        print(f"Decolando para altitude de {altitude} metros...")
-        
-        self.conn.mav.command_long_send(
-            self.conn.target_system, 
-            self.conn.target_component, 
-            mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 0, 0, 0, 0, 0, altitude
-        )
+    def ascend(self, target_altitude):
+        current_alt = self.current_altitude()
+        movement = DroneMoveUPFactory.create(current_alt, self.conn)
+    
+        movement.execute(target_altitude)
         
         self.conn.mav.request_data_stream_send(
             self.conn.target_system, 
             self.conn.target_component,
-            mavutil.mavlink.MAV_DATA_STREAM_ALL, 4, 1)
+            mavutil.mavlink.MAV_DATA_STREAM_ALL, 4, 1
+        )
         
         while True:
-            print(f"Altitude atual: {self.current_altitude()}m")
+            current_alt = self.current_altitude()
+            print(f"Altitude atual: {current_alt}m")
 
-            if self.current_altitude() >= altitude * 0.95: 
+            if current_alt >= target_altitude * 0.95: 
                 print("Altitude alvo alcançada.")
                 break
     
@@ -72,7 +75,7 @@ class Drone:
         while True:
             print(f"Altura {self.current_altitude()}m")
             print('Descendo... \n')
-            if self.current_altitude() < 1:
+            if self.current_altitude() < 0.5:
                 break; 
             
         print('Desceu com crtz')
@@ -220,22 +223,4 @@ class Drone:
         print(f"Moving NED for {north}m north, {east}m east, {down}m down")
         self.set_velocity_body(north, east, down)
 
-    def capture_images_and_metadata(cap, save_path, meta_path, num_images=3, pause_time=3):
-       
-        for i in range(num_images):
-            time.sleep(pause_time)  # Espera entre capturas
-
-            ret, frame = cap.read()
-            if ret:
-                timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
-                image_filename = f"{save_path}/Image_{i+1}_{timestamp}.jpg"
-                cv2.imwrite(image_filename, frame)
-                print(f"Imagem {i+1} capturada e salva em: {image_filename}")
-
-                # Salvar metadados
-                metadata_filename = f"{meta_path}/Metadata_{i+1}_{timestamp}.txt"
-                with open(metadata_filename, 'w') as metafile:
-                    metafile.write(f"Timestamp: {timestamp}\n")
-                    metafile.write(f"Latitude: {latitude}\n")
-                    metafile.write(f"Longitude: {longitude}\n")
-                    metafile.write(f"Altitude: {altitude}m\n")
+    

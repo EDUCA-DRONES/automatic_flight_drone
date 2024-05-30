@@ -11,7 +11,6 @@ class ArucoDetector:
     def __init__(self) -> None:
         self.ids = []
         self.corners = []
-        
     
     def detect_arucos(self, image):
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
