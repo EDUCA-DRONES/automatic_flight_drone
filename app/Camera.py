@@ -5,6 +5,7 @@ from app.FileManager import FileManager
 from app.ArucoDetector import ArucoDetector
 # from app.Ssh import SSHConnection
 
+
 class CameraConnection:
     source = None
     

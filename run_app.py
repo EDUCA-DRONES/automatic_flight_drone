@@ -19,7 +19,8 @@ def capture_images_and_metadata(
             print(f"Iniciando captura de imagens da câmera tipo: {camera_type}")
         
             camera.capture_images_and_metadata(drone, fileManager, aruco_detector, alt)
-        except:
+        except Exception as e:
+            print('Error: ' + str(e))
             print('Erro em capturar imagem')
 
 def capture_images_in_alts(
@@ -28,9 +29,9 @@ def capture_images_in_alts(
     aruco_detector: ArucoDetector, 
     cameras: dict):
     
-    for i in range(3,6):
+    for i in range(1,6):
         
-        HEIGHT = (i*3) + 1
+        HEIGHT = (i*3) 
         print(f"Altitude definida para {HEIGHT} METROS")
         drone.ascend(HEIGHT)
         capture_images_and_metadata(

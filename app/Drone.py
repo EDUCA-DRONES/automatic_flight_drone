@@ -1,7 +1,6 @@
 from pymavlink import mavutil
 import time 
 from app.DroneMoves import DroneMoveUPFactory
-
 class DroneConfig:
     def __init__(self) -> None:
         self.GUIDED_MODE = 4
@@ -14,7 +13,7 @@ class Drone:
         self.baud = '57600'
         self.URL = f'/dev/ttyUSB0'
         self.METER_CONVERTER = 1000.0
-        self.conn =  mavutil.mavlink_connection(self.URL, self.baud)
+        self.conn =  mavutil.mavlink_connection(self.URL,baud= self.baud,  mav10=False)
         self.config = DroneConfig()
         self.velocity = 30
         
