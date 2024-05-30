@@ -3,7 +3,7 @@ import cv2
 from app.Drone import Drone
 from app.FileManager import FileManager
 from app.ArucoDetector import ArucoDetector
-from app.Ssh import SSHConnection
+# from app.Ssh import SSHConnection
 
 class CameraConnection:
     source = None

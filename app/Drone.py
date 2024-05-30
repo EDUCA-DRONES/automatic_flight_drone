@@ -8,13 +8,13 @@ class DroneConfig:
         
 class Drone:
     def __init__(self) -> None:
-        self.IP = '127.0.0.1'
-        self.URL = f'udpin:{self.IP}:14551'
-        self.IP = '0.0.0.0'
-        # self.baud = '57600'
-        # self.URL = f'/dev/ttyUSB0'
+       # self.IP = '127.0.0.1'
+       # self.URL = f'udpin:{self.IP}:14551'
+       # self.IP = '0.0.0.0'
+        self.baud = '57600'
+        self.URL = f'/dev/ttyUSB0'
         self.METER_CONVERTER = 1000.0
-        self.conn =  mavutil.mavlink_connection(self.URL)
+        self.conn =  mavutil.mavlink_connection(self.URL, self.baud)
         self.config = DroneConfig()
         self.velocity = 30
         
@@ -108,6 +108,7 @@ class Drone:
 
     def disarm(self):
         print("Desarmando o drone.")
+        
         self.conn.mav.command_long_send(
             self.conn.target_system, self.conn.target_component,
             mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
@@ -125,7 +126,9 @@ class Drone:
 
         # Aguarda confirmação de mudança de modo
         while True:
-            msg = self.conn.recv_match(type='COMMAND_ACK', blocking=True)
+            print('entrou')
+            msg = self.conn.recv_match(type='COMMAND_ACK', blocking=False)
+            print(msg)
             if msg:
                 print("Received msg: ", msg)
                 expected_command = mavutil.mavlink.MAV_CMD_DO_SET_MODE

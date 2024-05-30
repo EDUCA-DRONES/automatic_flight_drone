@@ -1,0 +1,4 @@
+Timestamp: 2024-05-30_12-49-11
+Latitude: -14.3018152
+Longitude: -42.6904448
+Altitude: 35.635m

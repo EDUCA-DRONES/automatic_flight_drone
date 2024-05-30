@@ -11,13 +11,16 @@ def capture_images_and_metadata(
     alt):
     
     for camera_type, camera in cameras.items():
-        camera = Camera()
-        fileManager.create_type_dir(camera_type)
+        try:
+            camera = Camera()
+            fileManager.create_type_dir(camera_type)
+            
+            camera.initialize_video_capture(camera_type)
+            print(f"Iniciando captura de imagens da câmera tipo: {camera_type}")
         
-        camera.initialize_video_capture(camera_type)
-        print(f"Iniciando captura de imagens da câmera tipo: {camera_type}")
-       
-        camera.capture_images_and_metadata(drone, fileManager, aruco_detector, alt)
+            camera.capture_images_and_metadata(drone, fileManager, aruco_detector, alt)
+        except:
+            print('Erro em capturar imagem')
 
 def capture_images_in_alts(
     drone: Drone, 
@@ -25,9 +28,9 @@ def capture_images_in_alts(
     aruco_detector: ArucoDetector, 
     cameras: dict):
     
-    for i in range(1,6):
+    for i in range(3,6):
         
-        HEIGHT = i*3
+        HEIGHT = (i*3) + 1
         print(f"Altitude definida para {HEIGHT} METROS")
         drone.ascend(HEIGHT)
         capture_images_and_metadata(
@@ -59,7 +62,7 @@ def main():
        
         drone.land()
         drone.disarm()
-    except KeyboardInterrupt:
+    except:
         drone.land()
         drone.disarm()
     finally:
