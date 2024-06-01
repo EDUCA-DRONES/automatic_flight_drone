@@ -17,6 +17,5 @@ class SSHConnection:
             stdin, stdout, stderr = client.exec_command(command)
             print("Comando executado com sucesso")
     
-        
         finally:
             client.close()

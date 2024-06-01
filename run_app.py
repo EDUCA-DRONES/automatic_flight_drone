@@ -12,8 +12,8 @@ def capture_images_and_metadata(
     
     for camera_type, camera in cameras.items():
         try:
-            camera = Camera()
             fileManager.create_type_dir(camera_type)
+            camera = Camera()
             
             camera.initialize_video_capture(camera_type)
             print(f"Iniciando captura de imagens da câmera tipo: {camera_type}")

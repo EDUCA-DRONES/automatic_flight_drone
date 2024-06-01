@@ -1,4 +1,5 @@
 import cv2
+from app.ArucoCentralizer import ArucoCentralizer
 from app.Drone import Drone
 from app.Camera import Camera
 from app.ArucoDetector import ArucoDetector
@@ -9,7 +10,8 @@ def main():
     drone = Drone()
     camera = Camera()
     aruco_detector = ArucoDetector()
-
+    centralizer = ArucoCentralizer()
+    
     frame_skip = 5  # Process every 5th frame
     frame_count = 0
     
@@ -22,11 +24,12 @@ def main():
     drone.solicit_telemetry()
     drone.change_to_guided_mode()
     drone.arm_drone()
-    drone.ascend(10)
+    drone.ascend(4)
   
     try:
         i = 1
         while True:
+            
             i = 1 + i
             camera.read_capture()
             
@@ -38,6 +41,9 @@ def main():
             frame_count += 1    
             if frame_count % frame_skip == 0:
                 image, _, __ = aruco_detector.detect_arucos(camera.frame)
+                
+                centralizer.detect_and_move(drone, camera, aruco_detector)
+                
                 cv2.imshow('Video', image)
 
             aruco_detector.go_to_aruco_direction(drone)

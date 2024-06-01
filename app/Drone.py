@@ -1,17 +1,23 @@
+import cv2
 from pymavlink import mavutil
 import time 
 from app.DroneMoves import DroneMoveUPFactory
+from timeit import default_timer as timer
+
+
 class DroneConfig:
     def __init__(self) -> None:
         self.GUIDED_MODE = 4
         
 class Drone:
     def __init__(self) -> None:
-       # self.IP = '127.0.0.1'
-       # self.URL = f'udpin:{self.IP}:14551'
-       # self.IP = '0.0.0.0'
+        # self.IP = '192.168.0.103'
+        self.IP = '127.0.0.1'
+        self.PORT = '14551'
+        # self.PORT = '5760'
+        self.URL = f'udpin:{self.IP}:{self.PORT}'
         self.baud = '57600'
-        self.URL = f'/dev/ttyUSB0'
+        # self.URL = f'/dev/ttyUSB0'
         self.METER_CONVERTER = 1000.0
         self.conn =  mavutil.mavlink_connection(self.URL,baud= self.baud,  mav10=False)
         self.config = DroneConfig()
@@ -77,7 +83,7 @@ class Drone:
         while True:
             print(f"Altura {self.current_altitude()}m")
             print('Descendo... \n')
-            if self.current_altitude() < 0.5:
+            if self.current_altitude() < 0.1:
                 break; 
             
         print('Desceu com crtz')
@@ -182,10 +188,13 @@ class Drone:
         except Exception as e:
             print(f"Failed to send velocity command: {e}")
 
-    def move(self, direction, distance, velocity=20.0):
+    def move(self, direction, distance, velocity=0.5):
         """
         Moves the drone in the specified direction by the specified distance at the specified velocity.
         """
+
+        start = timer()
+
         print(f"Moving {direction} for {distance} meters at {velocity} m/s")
         lat, lon, alt = self.get_gps_position()
         print(f"Current GPS position: Latitude={lat}, Longitude={lon}, Altitude={alt}")
@@ -201,23 +210,25 @@ class Drone:
         elif direction == 'west':
             self.set_velocity_body(0, -velocity, 0)
         
-        time.sleep(duration)
+        # time.sleep(duration)
         self.set_velocity_body(0, 0, 0)
         
-        lat, lon, alt = self.get_gps_position()
-        print(f"New GPS position: Latitude={lat}, Longitude={lon}, Altitude={alt}")
-        print("Movement complete")
+        # lat, lon, alt = self.get_gps_position()
+        # print(f"New GPS position: Latitude={lat}, Longitude={lon}, Altitude={alt}")
+        print("Movement complete\n")
+        end = timer()
+        print(f'Duração: {end - start}')
     
-    def move_north(self, distance, velocity=20.0):
+    def move_north(self, distance, velocity=0.5):
         self.move('north', distance, velocity)
     
-    def move_south(self, distance, velocity=20.0):
+    def move_south(self, distance, velocity=0.5):
         self.move('south', distance, velocity)
     
-    def move_east(self, distance, velocity=20.0):
+    def move_east(self, distance, velocity=0.5):
         self.move('east', distance, velocity)
     
-    def move_west(self, distance, velocity=20.0):
+    def move_west(self, distance, velocity=0.5):
         self.move('west', distance, velocity)
 
     def move_direction(self, north, east, down):
@@ -227,4 +238,4 @@ class Drone:
         print(f"Moving NED for {north}m north, {east}m east, {down}m down")
         self.set_velocity_body(north, east, down)
 
-    
+        

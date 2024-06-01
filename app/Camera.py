@@ -1,3 +1,4 @@
+from datetime import datetime
 import time
 import cv2
 from app.Drone import Drone
@@ -65,6 +66,7 @@ class Camera:
         camera = CameraConnectionFactory.create(type)
         
         self.cap = camera.connection()
+        # self.cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
         
         if not self.cap or not self.cap.isOpened():
             print("Falha ao abrir a captura de vídeo.")
@@ -83,8 +85,14 @@ class Camera:
             lat, long, alt_ = drone.get_gps_position()
             
             if ret:
-                fileManager.create_image(processed_image, alt, i)
-                fileManager.create_meta_data(lat, long, alt, drone.current_altitude(), i)
                     
-            for _ in range(40):  # Limpa os últimos 40 frames para garantir frescor
-                self.cap.grab()
+                fileManager.create_meta_data(lat, long, alt, drone.current_altitude(), i)
+            
+            self.clean_buffer()
+                    
+    def clean_buffer(self):
+        for _ in range(120):  # Limpa os últimos 40 frames para garantir frescor
+            self.cap.grab()
+
+    def save_image(self, path):
+        cv2.imwrite(path, self.frame)
