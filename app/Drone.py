@@ -237,5 +237,22 @@ class Drone:
         """
         print(f"Moving NED for {north}m north, {east}m east, {down}m down")
         self.set_velocity_body(north, east, down)
+        
+    def adjust_position(self, offset_x, offset_y, sensitivity=0.01):
+        move_x = -offset_x * sensitivity
+        move_y = -offset_y * sensitivity
+        print(f"Ajustando posição: move_x: {move_x}, move_y: {move_y}")
+
+        # Envie o comando para o drone
+        self.conn.mav.set_position_target_local_ned_send(
+            time_boot_ms=0,
+            target_system=self.conn.target_system,
+            target_component=self.conn.target_component,
+            coordinate_frame=mavutil.mavlink.MAV_FRAME_LOCAL_NED,
+            type_mask=0b0000111111000111,  # Considera apenas velocidades
+            x=0, y=0, z=0,
+            vx=move_x, vy=move_y, vz=0,
+            afx=0, afy=0, afz=0,
+            yaw=0, yaw_rate=0)
 
         

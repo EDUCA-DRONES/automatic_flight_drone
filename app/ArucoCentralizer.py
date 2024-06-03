@@ -1,97 +1,90 @@
-from datetime import datetime
-import threading
-import time
 import cv2
 from app.Drone import Drone
 from app.Camera import Camera
-from app.FileManager import FileManager
 from app.ArucoDetector import ArucoDetector
+from cv2 import aruco
 
 class ArucoCentralizer:
     def __init__(self):
-        self.processed_image = None
-        self.move_x = 0
-        self.move_y = 0
-        self.tolerance = 40
-        self.center_x = 0
-        self.center_y = 0
-        self.frame = None
+        self.INTEREST_REGION_PIXELS = 25
+        self.GREEN = (0, 255, 0)
+        self.RED = (0, 0, 255)
+        self.MIN_COUNT = 40
 
-    def detect_and_move(self, drone: Drone, camera: Camera, aruco_detector: ArucoDetector):
-        c=1
-        count = 1
+    def detect_arucos(self, image):
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        aruco_dict = aruco.getPredefinedDictionary(aruco.DICT_ARUCO_ORIGINAL)
+        aruco_params = aruco.DetectorParameters()
+        corners, ids, rejected = aruco.detectMarkers(gray, aruco_dict, parameters=aruco_params)
+        centers = []
+        if ids is not None:
+            for corner in corners:
+                x = int(sum([c[0] for c in corner[0]]) / 4)
+                y = int(sum([c[1] for c in corner[0]]) / 4)
+                centers.append((x, y))
+                
+        return ids, corners, centers
+    
+    
+    def calculate_offset(self, center, image_shape):
+        image_center_x, image_center_y = image_shape[1] // 2, image_shape[0] // 2
+        offset_x = center[0] - image_center_x
+        offset_y = center[1] - image_center_y
+        return offset_x, offset_y
+
         
+    def execute(self, drone: Drone, camera: Camera, aruco_detector: ArucoDetector):
+
+        count = 0
         while True:
-            if c % 400 ==0:
-                print(c)
-                camera.read_capture()
-                self.frame = camera.frame
-                
-                if self.frame is None:
-                    continue
+            camera.read_capture()
+            if not camera.ret:
+                continue
 
-                # Detectar ArUcos
-                self.processed_image, ids, corners = aruco_detector.detect_arucos(self.frame)
-                # Mostrar a imagem processada
-                # Desenhar linhas guia e o centro do ArUco
-                height, width, _ = self.processed_image.shape
-                cv2.line(self.processed_image, (width // 2, 0), (width // 2, height), (0, 255, 0), 2)
-                cv2.line(self.processed_image, (0, height // 2), (width, height // 2), (0, 255, 0), 2)
-                cv2.circle(self.processed_image, (self.center_x, self.center_y), 5, (0, 0, 255), -1)
-
-                cv2.imshow('ArUco Detector', self.processed_image)
-                cv2.waitKey(1)
-                
-                if ids is None or corners is None:
-                    print("Nenhum marcador ArUco detectado.")
-                    continue
-
-                # Calcular o centro do ArUco detectado
-                corner = corners[0][0]
-                self.center_x = int((corner[0][0] + corner[2][0]) / 2)
-                self.center_y = int((corner[0][1] + corner[2][1]) / 2)
-
-                # Calcular o movimento necessário
-                self.move_x = self.center_x - width // 2
-                self.move_y = self.center_y - height // 2
-
-                if not 0 in ids and abs(self.move_x) < self.tolerance and abs(self.move_y) < self.tolerance:
-    
-                    print("ArUco centralizado.")
-                    cv2.imwrite(f'centralized/{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.jpg', self.processed_image)
-                    self.frame_count = 0
-                    return True
-
-                # Movimentar o drone baseado na posição do ArUco
-                count = count + 1
-                if count > 10:
-                    move_distance = 2  # Distância de movimento em metros
-                    if self.move_x > self.tolerance:
-                        drone.move_east(move_distance)
-                    elif self.move_x < -self.tolerance:
-                        drone.move_west(move_distance)
-
-                    if self.move_y > self.tolerance:
-                        drone.move_north(move_distance)
-                    elif self.move_y < -self.tolerance:
-                        drone.move_south(move_distance)
-
-                camera.clean_buffer()
+            # Define o centro da imagem
+            image_center_x, image_center_y = camera.frame.shape[1] // 2, camera.frame.shape[0] // 2
         
-            c+=1    
-        return False
+            ids, corners, centers = self.detect_arucos(camera.frame)  
 
-    def start(self, drone: Drone, camera: Camera, aruco_detector: ArucoDetector):
-        
-        self.detect_and_move(drone, camera, aruco_detector)
+            # Desenha um quadrado verde pequeno no centro da imagem para referência
+            cv2.rectangle(camera.frame, (image_center_x - self.INTEREST_REGION_PIXELS, image_center_y - self.INTEREST_REGION_PIXELS),
+                        (image_center_x + self.INTEREST_REGION_PIXELS, image_center_y + self.INTEREST_REGION_PIXELS), self.GREEN, 2)  # Verde
 
+            if ids is not None:
+                
+                for i, center in enumerate(centers):
+                    count += 1
+                    offset_x, offset_y = self.calculate_offset(center, camera.frame.shape)
+                    distance_pixels = (offset_x**2 + offset_y**2)**0.5
+                    color = self.GREEN if distance_pixels <= self.INTEREST_REGION_PIXELS else self.RED  # Verde se <= 1m, senão vermelho
+                    #color = (0, 0, 255)  # Vermelho por padrão
+                    CONVERSION_FACTOR = 0.17 / 25
 
-    def calculate_center_offset(self, corners, frame_shape):
-        frame_center = (frame_shape[1] // 2, frame_shape[0] // 2)
-        if corners:
-            marker_center = corners[0][0].mean(axis=0)
-            offset = (marker_center[0] - frame_center[0], marker_center[1] - frame_center[1])
-            return offset
-        return (0, 0)
+                    # Verifica se o ArUco está dentro do quadrado verde central
+                    #if abs(offset_x) <= 10 and abs(offset_y) <= 10:
+                    #  color = self.GREEN  # Verde se estiver dentro
+                    #   print("ArUco está centralizado.")
+                    if distance_pixels > self.INTEREST_REGION_PIXELS and count > self.MIN_COUNT:
+                          # Desenha um círculo no centro do ArUco
+                        print(f"Distância em pixels: {distance_pixels}, Distância em metros: {distance_pixels * CONVERSION_FACTOR}")
+                        cv2.circle(camera.frame, center, 5, color, -1)
+                        print("ArUco não está centralizado, ajustando posição...")
+                        print(f"offset_x: {offset_x}, offset_y: {offset_y}...")
+
+                        drone.adjust_position(offset_x, offset_y)
+                        
+                    elif count > self.MIN_COUNT:
+                        print('Centralizou')
+                        return None
+                        count = 0
+                    
+                    # Imprime informações sobre o deslocamento e a distância
+                    print(f"ArUco {ids[i]} center at {center}, offset_x: {offset_x}, offset_y: {offset_y}")
+                    break
+
+            # Mostra o vídeo
+            cv2.imshow('Drone Camera', camera.frame)
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
+            
     
- 
