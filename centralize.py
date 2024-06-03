@@ -12,7 +12,7 @@ def main():
     aruco_centralizer = ArucoCentralizer(drone, camera)
     
     try: 
-        camera.initialize_video_capture('computer')
+        camera.initialize_video_capture('rtsp')
 
         if not drone.connected():
             print("Falha na conexão com o drone.")

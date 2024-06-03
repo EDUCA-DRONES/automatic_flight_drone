@@ -11,11 +11,13 @@ class DroneConfig:
         
 class Drone:
     def __init__(self) -> None:
-        # self.IP = '192.168.0.103'
-        self.IP = '127.0.0.1'
-        self.PORT = '14551'
-        # self.PORT = '5760'
-        self.URL = f'udpin:{self.IP}:{self.PORT}'
+        self.IP = '192.168.0.103'
+        # self.IP = '127.0.0.1'
+        # self.PORT = '14551'
+        self.PORT = '5760'
+        # self.PROTOCOL = 'udpin'
+        self.PROTOCOL = 'tcp'
+        self.URL = f'{self.PROTOCOL}:{self.IP}:{self.PORT}'
         self.baud = '57600'
         # self.URL = f'/dev/ttyUSB0'
         self.METER_CONVERTER = 1000.0
@@ -238,7 +240,7 @@ class Drone:
         print(f"Moving NED for {north}m north, {east}m east, {down}m down")
         self.set_velocity_body(north, east, down)
         
-    def adjust_position(self, offset_x, offset_y, sensitivity=0.01):
+    def adjust_position(self, offset_x, offset_y, sensitivity=0.001):
         move_x = -offset_x * sensitivity
         move_y = -offset_y * sensitivity
         print(f"Ajustando posição: move_x: {move_x}, move_y: {move_y}")

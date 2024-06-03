@@ -69,7 +69,9 @@ class ArucoCentralizer:
     
     def execute(self):
         count = 0
+        
         while True:
+
             if not self.read_and_verify_capture():
                 continue
 
@@ -85,6 +87,7 @@ class ArucoCentralizer:
                     
                     if self.adjust_drone_position(center, offset_x, offset_y, distance_pixels, color, count):
                         return
+                    break
 
             self.display_video()
 

@@ -72,6 +72,8 @@ class Camera:
             print("Falha ao abrir a captura de vídeo.")
         
     def read_capture(self):
+        self.ret = None
+        self.frame = None
         self.ret, self.frame = self.cap.read()
 
        
@@ -91,7 +93,7 @@ class Camera:
             self.clean_buffer()
                     
     def clean_buffer(self):
-        for _ in range(120):  # Limpa os últimos 40 frames para garantir frescor
+        for _ in range(40):  # Limpa os últimos 40 frames para garantir frescor
             self.cap.grab()
 
     def save_image(self, path):
