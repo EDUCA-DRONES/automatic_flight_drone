@@ -58,7 +58,13 @@ class ArucoCentralizer:
             
         elif count > self.MIN_COUNT + self.MIN_COUNT:
             print('ArUco Centralizado...')
-            return True
+            if self.drone.current_altitude() < 1.5:
+                return True
+            self.drone.descend(self.drone.current_altitude() - 0.5)
+            print(f'Altitude: {self.drone.current_altitude()}')
+            print(self.drone.get_gps_position())
+            self.camera.cap.grab()
+        
         return False
 
     def read_and_verify_capture(self):

@@ -4,6 +4,8 @@ import time
 from app.DroneMoves import DroneMoveUPFactory
 from timeit import default_timer as timer
 
+from app.Masks import POSITION, VELOCITY
+
 
 class DroneConfig:
     def __init__(self) -> None:
@@ -64,8 +66,9 @@ class Drone:
         while True:
             repeat = 1 + repeat
             current_alt = self.current_altitude()
+            self
             print(f"Altitude atual: {current_alt}m")
-
+            print(self.get_gps_position())
             if current_alt >= target_altitude * 0.95: 
                 print("Altitude alvo alcançada.")
                 break
@@ -73,6 +76,44 @@ class Drone:
                 print('Tentativa de comunicação excedeu o limite de tentivas... Tentando novamente.')
                 self.ascend(target_altitude)
                 break
+    
+    def descend(self, target_altitude):
+        print('Descendo...')
+        current_alt = self.current_altitude()
+        
+        self.conn.mav.set_position_target_local_ned_send(
+            0,  # tempo boot_ms (tempo de início do boot do sistema em milissegundos)
+            self.conn.target_system,  # id do sistema
+            self.conn.target_component,  # id do componente
+            mavutil.mavlink.MAV_FRAME_LOCAL_NED,  # frame de referência
+            POSITION,  # tipo de máscara (indica quais dos campos são ignorados)
+            0, 0, target_altitude,  # coordenadas x, y, z (em metros ou em inteiros específicos)
+            0, 0, 0,  # velocidade x, y, z (em m/s)
+            0, 0, 0,  # acelerações x, y, z (em m/s^2)
+            0, 0  # yaw, yaw_rate (em radianos)
+        )
+         
+        self.conn.mav.request_data_stream_send(
+            self.conn.target_system, 
+            self.conn.target_component,
+            mavutil.mavlink.MAV_DATA_STREAM_ALL, 4, 1
+        )
+        
+        # repeat = 0
+        # while True:
+        #     repeat = 1 + repeat
+        #     current_alt = self.current_altitude()
+        #     self
+        #     print(f"Altitude atual: {current_alt}m")
+        #     print(self.get_gps_position())
+        #     if current_alt <= target_altitude * 0.95: 
+        #         print("Altitude alvo alcançada.")
+        #         break
+        #     elif repeat > 30:
+        #         print('Tentativa de comunicação excedeu o limite de tentivas... Tentando novamente.')
+        #         self.ascend(target_altitude)
+        #         break
+    
     
     def land(self):
         print("Comando de pouso enviado ao drone.")
@@ -180,7 +221,7 @@ class Drone:
                 self.conn.target_system,  # target system
                 self.conn.target_component,  # target component
                 mavutil.mavlink.MAV_FRAME_BODY_NED,  # frame
-                0b0000111111000111,  # type_mask (only speeds enabled)
+                VELOCITY,  # type_mask (only speeds enabled)
                 0, 0, 0,  # x, y, z positions (not used)
                 vx, vy, vz,  # x, y, z velocity in m/s
                 0, 0, 0,  # x, y, z acceleration (not supported yet, ignored in GCS_Mavlink)

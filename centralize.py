@@ -12,7 +12,7 @@ def main():
     aruco_centralizer = ArucoCentralizer(drone, camera)
     
     try: 
-        camera.initialize_video_capture('rtsp')
+        camera.initialize_video_capture('computer')
 
         if not drone.connected():
             print("Falha na conexão com o drone.")
@@ -20,7 +20,8 @@ def main():
         else:
             drone.change_to_guided_mode()
             drone.arm_drone()
-            drone.ascend(6)  # Subir para 2 metros
+            drone.ascend(6)  # Subir para 6 metros
+            # drone.ascend(20)  # Subir para 6 metros
             aruco_centralizer.execute()
         
     except Exception as e:
