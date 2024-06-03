@@ -95,11 +95,11 @@ class Drone:
             0, 0  # yaw, yaw_rate (em radianos)
         )
 
-        self.conn.mav.request_data_stream_send(
-            self.conn.target_system, 
-            self.conn.target_component,
-            mavutil.mavlink.MAV_DATA_STREAM_ALL, 4, 1
-        )
+        # self.conn.mav.request_data_stream_send(
+        #     self.conn.target_system, 
+        #     self.conn.target_component,
+        #     mavutil.mavlink.MAV_DATA_STREAM_ALL, 4, 1
+        # )
         
         # repeat = 0
         # while True:

@@ -57,14 +57,12 @@ class ArucoCentralizer:
             self.drone.adjust_position(offset_x, offset_y)
             
         elif count > self.MIN_COUNT + self.MIN_COUNT:
-            self.camera.cap.grab()
             
             print('ArUco Centralizado...')
             if self.drone.current_altitude() < 1.5:
                 return True
             self.drone.descend(self.drone.current_altitude() - 0.5)
             print(f'Altitude: {self.drone.current_altitude()}')
-            self.camera.cap.grab()
         
         return False
 
