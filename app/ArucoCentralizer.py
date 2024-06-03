@@ -70,8 +70,13 @@ class ArucoCentralizer:
     def execute(self):
         count = 0
         
+        for i in range(0,200):
+            print('Ajustando camera...')
+            self.camera.read_capture()
+            
         while True:
-
+            self.camera.cap.grab()
+              
             if not self.read_and_verify_capture():
                 continue
 

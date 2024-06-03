@@ -11,12 +11,14 @@ class DroneConfig:
         
 class Drone:
     def __init__(self) -> None:
-        self.IP = '192.168.0.103'
-        # self.IP = '127.0.0.1'
-        # self.PORT = '14551'
-        self.PORT = '5760'
-        # self.PROTOCOL = 'udpin'
-        self.PROTOCOL = 'tcp'
+        self.IP = '127.0.0.1'
+        self.PORT = '14551'
+        self.PROTOCOL = 'udpin'
+        
+        # self.IP = '192.168.0.103'
+        # self.PORT = '5760'
+        # self.PROTOCOL = 'tcp'
+        
         self.URL = f'{self.PROTOCOL}:{self.IP}:{self.PORT}'
         self.baud = '57600'
         # self.URL = f'/dev/ttyUSB0'
