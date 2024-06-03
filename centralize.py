@@ -9,8 +9,7 @@ from app.Drone import Drone
 def main():
     drone = Drone()
     camera = Camera()
-    aruco_detector = ArucoDetector()
-    aruco_centralizer = ArucoCentralizer()
+    aruco_centralizer = ArucoCentralizer(drone, camera)
     
     try: 
         camera.initialize_video_capture('computer')
@@ -22,14 +21,14 @@ def main():
             drone.change_to_guided_mode()
             drone.arm_drone()
             drone.ascend(6)  # Subir para 2 metros
-            aruco_centralizer.execute(drone, camera, aruco_detector)
+            aruco_centralizer.execute()
         
     except Exception as e:
         print(e)
     finally:
         drone.land()
         drone.disarm()
-        # camera.cap.release()
+        camera.cap.release()
         drone.conn.close()
         cv2.destroyAllWindows()
         
