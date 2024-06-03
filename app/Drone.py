@@ -68,7 +68,7 @@ class Drone:
             current_alt = self.current_altitude()
             self
             print(f"Altitude atual: {current_alt}m")
-            print(self.get_gps_position())
+            # print(self.get_gps_position())
             if current_alt >= target_altitude * 0.95: 
                 print("Altitude alvo alcançada.")
                 break
@@ -79,8 +79,10 @@ class Drone:
     
     def descend(self, target_altitude):
         print('Descendo...')
-        current_alt = self.current_altitude()
-        
+
+        # Certifique-se de que o target_altitude é negativo no referencial NED
+        target_altitude = -abs(target_altitude)
+
         self.conn.mav.set_position_target_local_ned_send(
             0,  # tempo boot_ms (tempo de início do boot do sistema em milissegundos)
             self.conn.target_system,  # id do sistema
@@ -92,7 +94,7 @@ class Drone:
             0, 0, 0,  # acelerações x, y, z (em m/s^2)
             0, 0  # yaw, yaw_rate (em radianos)
         )
-         
+
         self.conn.mav.request_data_stream_send(
             self.conn.target_system, 
             self.conn.target_component,

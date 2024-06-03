@@ -9,7 +9,7 @@ class ArucoCentralizer:
         self.INTEREST_REGION_PIXELS = 25
         self.GREEN = (0, 255, 0)
         self.RED = (0, 0, 255)
-        self.MIN_COUNT = 40
+        self.MIN_COUNT = 20
         self.drone = drone
         self.camera = camera
 
@@ -57,12 +57,13 @@ class ArucoCentralizer:
             self.drone.adjust_position(offset_x, offset_y)
             
         elif count > self.MIN_COUNT + self.MIN_COUNT:
+            self.camera.cap.grab()
+            
             print('ArUco Centralizado...')
             if self.drone.current_altitude() < 1.5:
                 return True
             self.drone.descend(self.drone.current_altitude() - 0.5)
             print(f'Altitude: {self.drone.current_altitude()}')
-            print(self.drone.get_gps_position())
             self.camera.cap.grab()
         
         return False
