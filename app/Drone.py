@@ -1,11 +1,7 @@
-import cv2
 from pymavlink import mavutil
-import time 
 from app.DroneMoves import DroneMoveUPFactory
 from timeit import default_timer as timer
-
 from app.Masks import POSITION, VELOCITY
-
 
 class DroneConfig:
     def __init__(self) -> None:
@@ -81,7 +77,7 @@ class Drone:
         print('Descendo...')
 
         # Certifique-se de que o target_altitude é negativo no referencial NED
-        target_altitude = -abs(target_altitude)
+        target_altitude = abs(target_altitude)
 
         self.conn.mav.set_position_target_local_ned_send(
             0,  # tempo boot_ms (tempo de início do boot do sistema em milissegundos)
@@ -94,28 +90,6 @@ class Drone:
             0, 0, 0,  # acelerações x, y, z (em m/s^2)
             0, 0  # yaw, yaw_rate (em radianos)
         )
-
-        # self.conn.mav.request_data_stream_send(
-        #     self.conn.target_system, 
-        #     self.conn.target_component,
-        #     mavutil.mavlink.MAV_DATA_STREAM_ALL, 4, 1
-        # )
-        
-        # repeat = 0
-        # while True:
-        #     repeat = 1 + repeat
-        #     current_alt = self.current_altitude()
-        #     self
-        #     print(f"Altitude atual: {current_alt}m")
-        #     print(self.get_gps_position())
-        #     if current_alt <= target_altitude * 0.95: 
-        #         print("Altitude alvo alcançada.")
-        #         break
-        #     elif repeat > 30:
-        #         print('Tentativa de comunicação excedeu o limite de tentivas... Tentando novamente.')
-        #         self.ascend(target_altitude)
-        #         break
-    
     
     def land(self):
         print("Comando de pouso enviado ao drone.")
@@ -285,9 +259,9 @@ class Drone:
         print(f"Moving NED for {north}m north, {east}m east, {down}m down")
         self.set_velocity_body(north, east, down)
         
-    def adjust_position(self, offset_x, offset_y, sensitivity=0.001):
-        move_x = -offset_x * sensitivity
-        move_y = -offset_y * sensitivity
+    def adjust_position(self, offset_x, offset_y, sensitivity=0.008):
+        move_x = -self.limit_offset(offset_x * sensitivity)
+        move_y = -self.limit_offset(offset_y * sensitivity)
         print(f"Ajustando posição: move_x: {move_x}, move_y: {move_y}")
 
         # Envie o comando para o drone
@@ -296,10 +270,15 @@ class Drone:
             target_system=self.conn.target_system,
             target_component=self.conn.target_component,
             coordinate_frame=mavutil.mavlink.MAV_FRAME_LOCAL_NED,
-            type_mask=0b0000111111000111,  # Considera apenas velocidades
+            type_mask=VELOCITY,  # Considera apenas velocidades
             x=0, y=0, z=0,
             vx=move_x, vy=move_y, vz=0,
             afx=0, afy=0, afz=0,
             yaw=0, yaw_rate=0)
-
         
+    def limit_offset(self, offset):
+        if offset <= 0.15:
+            return 0.15
+        elif offset >= 2:
+            return 2
+        return offset

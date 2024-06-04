@@ -1,10 +1,7 @@
 import cv2
 import cv2.aruco as aruco
-import numpy as np
-import time
 from pymavlink import mavutil
-import os
-from datetime import datetime
+from app.Masks import VELOCITY
 
 def detect_arucos(image):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -38,7 +35,7 @@ def adjust_drone_position(master, offset_x, offset_y, sensitivity=0.01):
         target_system=master.target_system,
         target_component=master.target_component,
         coordinate_frame=mavutil.mavlink.MAV_FRAME_LOCAL_NED,
-        type_mask=0b0000111111000111,  # Considera apenas velocidades
+        type_mask=VELOCITY,  # Considera apenas velocidades
         x=0, y=0, z=0,
         vx=move_x, vy=move_y, vz=0,
         afx=0, afy=0, afz=0,

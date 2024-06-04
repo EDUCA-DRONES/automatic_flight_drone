@@ -9,8 +9,9 @@ class ArucoCentralizer:
         self.INTEREST_REGION_PIXELS = 25
         self.GREEN = (0, 255, 0)
         self.RED = (0, 0, 255)
-        self.MIN_COUNT = 20
+        self.MIN_COUNT = 5
         self.drone = drone
+        self.count = 0
         self.camera = camera
 
     def detect_arucos(self, image):
@@ -43,9 +44,10 @@ class ArucoCentralizer:
         cv2.rectangle(self.camera.frame, (image_center_x - self.INTEREST_REGION_PIXELS, image_center_y - self.INTEREST_REGION_PIXELS),
                       (image_center_x + self.INTEREST_REGION_PIXELS, image_center_y + self.INTEREST_REGION_PIXELS), self.GREEN, 2)
 
-    def adjust_drone_position(self, center, offset_x, offset_y, distance_pixels, color, count):
+    def adjust_drone_position(self, center, offset_x, offset_y, distance_pixels, color):
         CONVERSION_FACTOR = 0.17 / 25
-        if distance_pixels > self.INTEREST_REGION_PIXELS and count > self.MIN_COUNT:
+        print(self.count)
+        if distance_pixels > self.INTEREST_REGION_PIXELS and self.count > self.MIN_COUNT:
             print('\n--------------\n')
             print(f"Distância em pixels: {distance_pixels}, Distância em metros: {distance_pixels * CONVERSION_FACTOR}")
             
@@ -55,14 +57,16 @@ class ArucoCentralizer:
             print(f"offset_x: {offset_x}, offset_y: {offset_y}...")
             
             self.drone.adjust_position(offset_x, offset_y)
+            self.count = 0
             
-        elif count > self.MIN_COUNT + self.MIN_COUNT:
+            
+        elif self.count > 25:
             
             print('ArUco Centralizado...')
-            if self.drone.current_altitude() < 1.5:
-                return True
-            self.drone.descend(self.drone.current_altitude() - 0.5)
-            print(f'Altitude: {self.drone.current_altitude()}')
+            # if self.drone.current_altitude() < 1.5:
+            return True
+            # self.drone.descend(self.drone.current_altitude() - 0.5)
+            # print(f'Altitude: {self.drone.current_altitude()}')
         
         return False
 
@@ -73,7 +77,6 @@ class ArucoCentralizer:
         return True
     
     def execute(self):
-        count = 0
         
         for i in range(0,200):
             print('Ajustando camera...')
@@ -90,13 +93,15 @@ class ArucoCentralizer:
 
             if ids is not None:
                 for i, center in enumerate(centers):
-                    count += 1
+                    self.count += 1
                     offset_x, offset_y = self.calculate_offset(center, self.camera.frame.shape)
                     distance_pixels = (offset_x**2 + offset_y**2)**0.5
                     color = self.GREEN if distance_pixels <= self.INTEREST_REGION_PIXELS else self.RED
                     
-                    if self.adjust_drone_position(center, offset_x, offset_y, distance_pixels, color, count):
+                    if self.adjust_drone_position(center, offset_x, offset_y, distance_pixels, color):
                         return
+                   
+                        
                     break
 
             self.display_video()
