@@ -10,7 +10,6 @@ def main():
     drone = Drone()
     camera = Camera()
     aruco_detector = ArucoDetector()
-    centralizer = ArucoCentralizer()
     
     frame_skip = 5  # Process every 5th frame
     frame_count = 0
@@ -42,7 +41,6 @@ def main():
             if frame_count % frame_skip == 0:
                 image, _, __ = aruco_detector.detect_arucos(camera.frame)
                 
-                centralizer.detect_and_move(drone, camera, aruco_detector)
                 
                 cv2.imshow('Video', image)
 
@@ -56,6 +54,8 @@ def main():
         drone.disarm()
         print('Desceu')
         print("Simulação interrompida pelo usuário.")
+    except Exception as e:
+        print(e)
         
     finally:
         if camera.cap:

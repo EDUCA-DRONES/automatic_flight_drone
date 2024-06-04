@@ -1,6 +1,7 @@
 from pymavlink import mavutil
 from app.DroneMoves import DroneMoveUPFactory
 from timeit import default_timer as timer
+from app.GPS import GPS
 from app.Masks import POSITION, VELOCITY
 
 class DroneConfig:
@@ -24,6 +25,7 @@ class Drone:
         self.conn =  mavutil.mavlink_connection(self.URL,baud= self.baud,  mav10=False)
         self.config = DroneConfig()
         self.velocity = 30
+        self.gps = GPS()
         
     def connected(self):
         return self.conn.wait_heartbeat(timeout=5)
@@ -186,29 +188,6 @@ class Drone:
         else:
             raise Exception("Failed to retrieve GPS position")
 
-    def set_velocity_body(self, vx, vy, vz):
-        """
-        Sets the velocity of the drone in the body frame.
-        """
-        try:
-            # Create the MAVLink message directly
-            msg = mavutil.mavlink.MAVLink_set_position_target_local_ned_message(
-                0,  # time_boot_ms (not used)
-                self.conn.target_system,  # target system
-                self.conn.target_component,  # target component
-                mavutil.mavlink.MAV_FRAME_BODY_NED,  # frame
-                VELOCITY,  # type_mask (only speeds enabled)
-                0, 0, 0,  # x, y, z positions (not used)
-                vx, vy, vz,  # x, y, z velocity in m/s
-                0, 0, 0,  # x, y, z acceleration (not supported yet, ignored in GCS_Mavlink)
-                0, 0  # yaw, yaw_rate (not supported yet, ignored in GCS_Mavlink)
-            )
-            # Send the MAVLink message
-            self.conn.mav.send(msg)
-            print(f"Velocity command sent: vx={vx}, vy={vy}, vz={vz}")
-        except Exception as e:
-            print(f"Failed to send velocity command: {e}")
-
     def move(self, direction, distance, velocity=0.5):
         """
         Moves the drone in the specified direction by the specified distance at the specified velocity.
@@ -220,22 +199,9 @@ class Drone:
         lat, lon, alt = self.get_gps_position()
         print(f"Current GPS position: Latitude={lat}, Longitude={lon}, Altitude={alt}")
         
-        duration = distance / velocity
+        new_lat, new_long =  self.gps.calculate_coord(lat, lon, 4.9, direction)
+        self.go_to_coord(new_lat, new_long)
         
-        if direction == 'north':
-            self.set_velocity_body(velocity, 0, 0)
-        elif direction == 'south':
-            self.set_velocity_body(-velocity, 0, 0)
-        elif direction == 'east':
-            self.set_velocity_body(0, velocity, 0)
-        elif direction == 'west':
-            self.set_velocity_body(0, -velocity, 0)
-        
-        # time.sleep(duration)
-        self.set_velocity_body(0, 0, 0)
-        
-        # lat, lon, alt = self.get_gps_position()
-        # print(f"New GPS position: Latitude={lat}, Longitude={lon}, Altitude={alt}")
         print("Movement complete\n")
         end = timer()
         print(f'Duração: {end - start}')
@@ -252,6 +218,25 @@ class Drone:
     def move_west(self, distance, velocity=0.5):
         self.move('west', distance, velocity)
 
+    def go_to_coord(self, new_lat, new_long):
+      
+        # Enviar comando para ir para a nova coordenada
+        msg = mavutil.mavlink.MAVLink_set_position_target_global_int_message(
+            0,  # time_boot_ms (not used)
+            0, 0,  # target system, target component
+            mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,  # frame
+            0b0000111111111000,  # type_mask (only positions enabled)
+            int(new_lat * 1e7),  # latitude in 1E7
+            int(new_long * 1e7),  # longitude in 1E7
+            self.current_altitude(),  # altitude (in meters)
+            0, 0, 0,  # x, y, z velocity in m/s (not used)
+            0, 0, 0,  # x, y, z acceleration (not used)
+            0, 0)  # yaw, yaw_rate (not used)
+
+        self.conn.mav.send(msg)
+        # self.conn.flush()
+        
+        
     def move_direction(self, north, east, down):
         """
         Moves the drone in the specified direction.
