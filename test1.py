@@ -1,107 +1,132 @@
-from dronekit import connect, VehicleMode, LocationGlobalRelative
-from pymavlink import mavutil
-import time
-import argparse  
-
 import numpy as np
 import cv2
-from cv2 import aruco
+import glob
+from pymavlink import mavutil
+import pickle
+import time
 
+# Step 1: Camera Calibration
 
+# Define the chessboard size (number of internal corners per row and column)
+chessboard_size = (7, 7)
 
-cap = cv2.VideoCapture(0)
+# Prepare object points (0,0,0), (1,0,0), (2,0,0), ..., (7,5,0)
+objp = np.zeros((chessboard_size[0] * chessboard_size[1], 3), np.float32)
+objp[:, :2] = np.mgrid[0:chessboard_size[0], 0:chessboard_size[1]].T.reshape(-1, 2)
 
+# Arrays to store object points and image points from all images
+objpoints = []  # 3D points in real world space
+imgpoints = []  # 2D points in image plane
 
+# List of calibration images
+images = glob.glob('calibration_imgs/*.jpg')
 
+# Iterate through the list and search for chessboard corners
+for fname in images:
+    img = cv2.imread(fname)
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
-parser = argparse.ArgumentParser()
-parser.add_argument('--connect', default='127.0.0.1:14550')
-args = parser.parse_args()
+    # Find the chessboard corners
+    ret, corners = cv2.findChessboardCorners(gray, chessboard_size, None)
 
-# Connect to the Vehicle
-print( 'Connecting to vehicle on: %s' % args.connect)
-vehicle = connect(args.connect, baud=921600, wait_ready=True)
+    # If found, add object points and image points
+    if ret:
+        objpoints.append(objp)
+        imgpoints.append(corners)
+        cv2.drawChessboardCorners(img, chessboard_size, corners, ret)
+        cv2.imshow('img', img)
+        cv2.waitKey(500)
 
+cv2.destroyAllWindows()
 
+# Load a test image
+img = cv2.imread('calibration_imgs/2024-06-08_10-50-07.jpg')
+img_size = (img.shape[1], img.shape[0])
 
+# Camera calibration
+ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, img_size, None, None)
 
-# Function to arm and then takeoff to a user specified altitude
-def arm_and_takeoff(aTargetAltitude):
+# Undistort a test image and save the result
+dst = cv2.undistort(img, mtx, dist, None, mtx)
+cv2.imwrite('calibration_imgs/test_undist.jpg', dst)
 
-  print ("Basic pre-arm checks")
-  # Don't let the user try to arm until autopilot is ready
-  while not vehicle.is_armable:
-    print (" Waiting for vehicle to initialise...")
-    time.sleep(1)
-        
-  print( "Arming motors")
-  # Copter should arm in GUIDED mode
-  vehicle.mode    = VehicleMode("GUIDED")
-  vehicle.armed   = True
+# Save calibration results for future use
+dist_pickle = {"mtx": mtx, "dist": dist}
+with open("calibration_imgs/wide_dist_pickle.p", "wb") as f:
+    pickle.dump(dist_pickle, f)
 
-  while not vehicle.armed:
-    print( " Waiting for arming...")
-    time.sleep(1)
+# Step 2: ArUco Detection and Precision Landing
 
-  print ("Taking off!")
-  vehicle.simple_takeoff(aTargetAltitude) # Take off to target altitude
+# Load calibration results
+with open("calibration_imgs/wide_dist_pickle.p", "rb") as f:
+    calib_data = pickle.load(f)
+camera_matrix = calib_data["mtx"]
+dist_coeffs = calib_data["dist"]
 
-  # Check that vehicle has reached takeoff altitude
-  while True:
-    print( " Altitude: "), vehicle.location.global_relative_frame.alt 
-    #Break and return from function just below target altitude.        
-    if vehicle.location.global_relative_frame.alt>=aTargetAltitude*0.95: 
-      print ("Reached target altitude")
-      break
-    time.sleep(1)
+# Setup ArUco dictionary and parameters
+aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_ARUCO_ORIGINAL)  
+parameters = cv2.aruco.DetectorParameters()
+# Initialize the camera
+cap = cv2.VideoCapture('rtsp://admin:admin@192.168.0.110:554/11')  # Change to 1 if using an external camera
 
-#Takeoff height in meters
-arm_and_takeoff(8)
+# Connect to the drone
+master = mavutil.mavlink_connection('udp:127.0.0.1:14550')
+master.wait_heartbeat()
+print("Connected to the drone!")
 
-print("Take off complete")
+def send_land_message(x, y):
+    master.mav.send(
+        mavutil.mavlink.MAVLink_set_position_target_local_ned_message(
+            10,  # time_boot_ms
+            master.target_system,
+            master.target_component,
+            mavutil.mavlink.MAV_FRAME_LOCAL_NED,
+            int(0b110111111000),  # type_mask (only positions enabled)
+            x, y, 0,  # x, y, z positions
+            0, 0, 0,  # x, y, z velocity
+            0, 0, 0,  # x, y, z acceleration (not used)
+            0, 0))  # yaw, yaw_rate
 
-# Hover for 10 seconds
-time.sleep(2)
-
-
-while(True):
-    # Capture frame-by-frame
+while True:
     ret, frame = cap.read()
+    if not ret:
+        break
 
-    # Our operations on the frame come here
+    # Convert to grayscale
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    
+    # Detect ArUco markers
+    corners, ids, rejected = cv2.aruco.detectMarkers(gray, aruco_dict, parameters=parameters)
 
-
-
-    grey = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    aruco_dict = aruco.Dictionary_get(aruco.DICT_4X4_100)
-    parameters =  aruco.DetectorParameters_create()
-    corners, ids, rejectedImgPoints = aruco.detectMarkers(gray, aruco_dict, parameters=parameters)
-    frame_markers = aruco.drawDetectedMarkers(frame.copy(), corners, ids)
-
-
-    for rejectedPolygons in rejectedImgPoints:
-         for points in rejectedPolygons:
-            cv2.line(frame_markers, tuple(points[0]), tuple(points[1]), [100, 0, 100])
-            cv2.line(frame_markers, tuple(points[2]), tuple(points[1]), [100, 0, 100])
-            cv2.line(frame_markers, tuple(points[2]), tuple(points[3]), [100, 0, 100])
-            cv2.line(frame_markers, tuple(points[0]), tuple(points[3]), [100, 0, 100])
-
-  #  cv2.imshow('frame_marker',frame_markers)
-  #  "53" is the index id of that particular Aruco Marker ( tetsed with 4X4 matrix marker)
-    if (ids==53):
-       print("Now let's land")
+    if ids is not None:
+        # Estimate pose of each marker
+        rvecs, tvecs, _ = cv2.aruco.estimatePoseSingleMarkers(corners, 0.15, camera_matrix, dist_coeffs)  # 0.15 is the marker length in meters
         
-       vehicle.mode = VehicleMode("LAND")
+        for i in range(len(ids)):
+            # Draw axis and marker
+            cv2.drawFrameAxes(frame, camera_matrix, dist_coeffs, rvecs[i], tvecs[i], 0.1)
+            cv2.aruco.drawDetectedMarkers(frame, corners)
+            
+            # Send landing message to drone
+            x, y, z = tvecs[i][0][0], tvecs[i][0][1], tvecs[i][0][2]
+            send_land_message(x, y)
+            print(f"Marker ID: {ids[i]}, Position: {tvecs[i]}")
 
-       break
+   
+    height, width, _ = frame.shape
+    cv2.line(frame, (width // 2, 0), (width // 2, height), (0, 0, 255), 2)
+    cv2.line(frame, (0, height // 2), (width, height // 2), (0, 0, 255), 2)
+    cv2.circle(frame, (0, 0), 5, (0, 0, 255), -1)
+
+    p = 4 * 0.15
+    a = 0.15 * 0.15
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    cv2.putText(frame,f'Perimetro: {p}',(10,500), font, 4,(255,255,255),2,cv2.LINE_AA)
+    cv2.putText(frame,f'Area: {a}',(10,200), font, 4,(255,255,255),2,cv2.LINE_AA)
+      
+    cv2.imshow('Frame', frame)
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
 
 cap.release()
 cv2.destroyAllWindows()
-
-
-
-
-
-# Close vehicle object
-vehicle.close()

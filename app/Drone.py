@@ -10,13 +10,13 @@ class DroneConfig:
         
 class Drone:
     def __init__(self) -> None:
-        self.IP = '127.0.0.1'
-        self.PORT = '14551'
-        self.PROTOCOL = 'udpin'
+        # self.IP = '127.0.0.1'
+        # self.PORT = '14551'
+        # self.PROTOCOL = 'udpin'
         
-        # self.IP = '192.168.0.103'
-        # self.PORT = '5760'
-        # self.PROTOCOL = 'tcp'
+        self.IP = '192.168.0.103'
+        self.PORT = '5760'
+        self.PROTOCOL = 'tcp'
         
         self.URL = f'{self.PROTOCOL}:{self.IP}:{self.PORT}'
         self.baud = '57600'
@@ -233,7 +233,7 @@ class Drone:
             0, 0, 0,  # x, y, z acceleration (not used)
             0, 0)  # yaw, yaw_rate (not used)
 
-        self.conn.mav.send(msg)
+        self.conn.mav.send_mavlink(msg)
         # self.conn.flush()
         
         
@@ -244,22 +244,32 @@ class Drone:
         print(f"Moving NED for {north}m north, {east}m east, {down}m down")
         self.set_velocity_body(north, east, down)
         
-    def adjust_position(self, offset_x, offset_y, sensitivity=0.008):
+    def adjust_position(self, offset_x, offset_y, sensitivity=0.004):
         move_x = -self.limit_offset(offset_x * sensitivity)
         move_y = -self.limit_offset(offset_y * sensitivity)
         print(f"Ajustando posição: move_x: {move_x}, move_y: {move_y}")
 
         # Envie o comando para o drone
-        self.conn.mav.set_position_target_local_ned_send(
-            time_boot_ms=0,
-            target_system=self.conn.target_system,
-            target_component=self.conn.target_component,
-            coordinate_frame=mavutil.mavlink.MAV_FRAME_LOCAL_NED,
-            type_mask=VELOCITY,  # Considera apenas velocidades
-            x=0, y=0, z=0,
-            vx=move_x, vy=move_y, vz=0,
-            afx=0, afy=0, afz=0,
-            yaw=0, yaw_rate=0)
+        # self.conn.mav.set_position_target_local_ned_send(
+        #     time_boot_ms=0,
+        #     target_system=self.conn.target_system,
+        #     target_component=self.conn.target_component,
+        #     coordinate_frame=mavutil.mavlink.MAV_FRAME_LOCAL_NED,
+        #     type_mask=VELOCITY,  # Considera apenas velocidades
+        #     x=0, y=0, z=0,
+        #     vx=move_x, vy=move_y, vz=0,
+        #     afx=0, afy=0, afz=0,
+        #     yaw=0, yaw_rate=0)
+        self.conn.mav.send(
+            mavutil.mavlink.MAVLink_set_position_target_local_ned_message(
+                10, self.conn.target_system, self.conn.target_component, 
+                mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, 
+                int(0b110111111000),
+               move_x, move_y,  0,
+                0, 0, 0,
+                0, 0, 0,
+                0, 0))
+
         
     def limit_offset(self, offset):
         if offset <= 0.15:

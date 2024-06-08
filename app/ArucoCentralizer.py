@@ -9,7 +9,7 @@ class ArucoCentralizer:
         self.INTEREST_REGION_PIXELS = 25
         self.GREEN = (0, 255, 0)
         self.RED = (0, 0, 255)
-        self.MIN_COUNT = 5
+        self.MIN_COUNT = 15
         self.drone = drone
         self.count = 0
         self.camera = camera
