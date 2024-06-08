@@ -63,29 +63,15 @@ with open("calibration_imgs/wide_dist_pickle.p", "rb") as f:
 camera_matrix = calib_data["mtx"]
 dist_coeffs = calib_data["dist"]
 
+print(camera_matrix)
+print(dist_coeffs)
+
 # Setup ArUco dictionary and parameters
 aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_ARUCO_ORIGINAL)  
 parameters = cv2.aruco.DetectorParameters()
 # Initialize the camera
 cap = cv2.VideoCapture('rtsp://admin:admin@192.168.0.110:554/11')  # Change to 1 if using an external camera
-
-# Connect to the drone
-master = mavutil.mavlink_connection('udp:127.0.0.1:14550')
-master.wait_heartbeat()
-print("Connected to the drone!")
-
-def send_land_message(x, y):
-    master.mav.send(
-        mavutil.mavlink.MAVLink_set_position_target_local_ned_message(
-            10,  # time_boot_ms
-            master.target_system,
-            master.target_component,
-            mavutil.mavlink.MAV_FRAME_LOCAL_NED,
-            int(0b110111111000),  # type_mask (only positions enabled)
-            x, y, 0,  # x, y, z positions
-            0, 0, 0,  # x, y, z velocity
-            0, 0, 0,  # x, y, z acceleration (not used)
-            0, 0))  # yaw, yaw_rate
+#cap = cv2.VideoCapture(0)  # Change to 1 if using an external camera
 
 while True:
     ret, frame = cap.read()
@@ -100,7 +86,7 @@ while True:
 
     if ids is not None:
         # Estimate pose of each marker
-        rvecs, tvecs, _ = cv2.aruco.estimatePoseSingleMarkers(corners, 0.15, camera_matrix, dist_coeffs)  # 0.15 is the marker length in meters
+        rvecs, tvecs, _ = cv2.aruco.estimatePoseSingleMarkers(corners, 0.2, camera_matrix, dist_coeffs)  # 0.15 is the marker length in meters
         
         for i in range(len(ids)):
             # Draw axis and marker
@@ -109,7 +95,7 @@ while True:
             
             # Send landing message to drone
             x, y, z = tvecs[i][0][0], tvecs[i][0][1], tvecs[i][0][2]
-            send_land_message(x, y)
+            #send_land_message(x, y)
             print(f"Marker ID: {ids[i]}, Position: {tvecs[i]}")
 
    
