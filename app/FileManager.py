@@ -4,8 +4,8 @@ import cv2
 
 class FileManager:
     def __init__(self) -> None:
-        self.save_path = 'captured_images_tests_2'
-        self.meta_path = 'metadata_images_tests_2'
+        self.save_path = 'captured_images_tests_3'
+        self.meta_path = 'metadata_images_tests_3'
         self.type_img_dir = ''
         self.type_meta_dir = ''
         self.timestamp = None
@@ -14,9 +14,9 @@ class FileManager:
         os.makedirs(self.save_path, exist_ok=True)
         os.makedirs(self.meta_path, exist_ok=True)
         
-    def create_type_dir(self, type):
-        self.type_img_dir = f'{self.save_path}/{type}'
-        self.type_meta_dir = f'{self.meta_path}/{type}'
+    def create_type_dir(self, type, alt):
+        self.type_img_dir = f'{self.save_path}/{type}/alt_{alt}'
+        self.type_meta_dir = f'{self.meta_path}/{type}/alt_{alt}'
         os.makedirs(self.type_img_dir, exist_ok=True)
         os.makedirs(self.type_meta_dir, exist_ok=True)
     

@@ -1,5 +1,5 @@
 from datetime import datetime
-
+import os
 import cv2
 from app.ArucoDetector import ArucoDetector
 from app.Camera import Camera
@@ -11,13 +11,13 @@ fileManager = FileManager()
 def main():
     camera = Camera()
         
-    camera.initialize_video_capture('rtsp')
+    camera.initialize_video_capture('esp32')
     
     try:
         while True:
             camera.read_capture()
             
-            camera.save_image(f'calibration_imgs/{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.jpg')
+            # camera.save_image(f'calibration_imgs/{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.jpg')
             cv2.imshow('Teste', camera.frame)
             cv2.waitKey(1)
     except:

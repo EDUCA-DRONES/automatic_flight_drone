@@ -3,9 +3,9 @@ import cv2
 import cv2.aruco as aruco
 from app.Drone import Drone
 
-NORTH_ID = 27
-SOUTH_ID = 14
-EAST_ID = 63
+NORTH_ID = 10
+SOUTH_ID = 27
+EAST_ID = 65
 WEST_ID = 48
 
 class ArucoDetector:
@@ -14,20 +14,19 @@ class ArucoDetector:
         self.corners = []
         self.aruco_dict = aruco.getPredefinedDictionary(aruco.DICT_ARUCO_ORIGINAL)
         self.aruco_params = aruco.DetectorParameters()
-        self.aruco_size = 0.15
+        self.aruco_size = 0.10
 
-    def detect_arucos_base(self, frame):
-        return cv2.aruco.detectMarkers(frame, self.aruco_dict, parameters=self.aruco_params)
-    
+     
     def detect_arucos(self, image):
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        
+        aruco_dict = aruco.getPredefinedDictionary(aruco.DICT_ARUCO_ORIGINAL)
+        
+        aruco_params = aruco.DetectorParameters()
+        corners, ids, rejected = aruco.detectMarkers(gray, aruco_dict, parameters=aruco_params)
+        self.ids, self.corners = ids, corners if ids is not None else (None, None)
 
-        corners, ids, rejected = self.detect_arucos_base(gray)
-        ids, corners = ids, corners if ids is not None else (None, None)
-        print('Valor do id: ' + str(ids))
-        if ids and ids is not None:
-            self.ids = ids
-            self.corners = corners
+        if self.ids is not None:
             image = aruco.drawDetectedMarkers(image, corners, ids)
 
         return image, ids, corners

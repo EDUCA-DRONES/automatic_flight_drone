@@ -14,7 +14,6 @@ def main():
     camera_matrix, dist_coeffs = camera_calibrator.calibrate()
     
     try: 
-        camera.initialize_video_capture('rtsp')
 
         if not drone.connected():
             print("Falha na conexão com o drone.")
@@ -22,19 +21,26 @@ def main():
         else:
             drone.change_to_guided_mode()
             drone.arm_drone()
-            drone.ascend(6)  # Subir para 6 metros
-            # drone.ascend(20)  # Subir para 6 metros
-
-        count=0
+            drone.ascend(6)  
+            
+        count = 0
+        camera.initialize_video_capture('rtsp')
+        
         while True:
+            camera.cap.grab()
+            
             camera.read_capture()
+            
             if not camera.ret:
-                break
+                continue
             
             positions =  aruco_detector.get_aruco_positions(camera.frame, camera_matrix, dist_coeffs)
             
-            if positions:
-                count += 1
+            print(positions)
+            print(count)
+            
+            if positions is not None:
+                count = count + 1
                 if count > 100:
                     drone.adjust_position(positions.get('x'), positions.get('y'))
                     break
@@ -49,8 +55,7 @@ def main():
             cv2.imshow('Frame', camera.frame)
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
-
-
+            
     except Exception as e:
         print(e)
     finally:

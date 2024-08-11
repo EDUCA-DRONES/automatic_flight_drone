@@ -23,7 +23,7 @@ def main():
     drone.solicit_telemetry()
     drone.change_to_guided_mode()
     drone.arm_drone()
-    drone.ascend(4)
+    drone.ascend(6)
   
     try:
         i = 1
