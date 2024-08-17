@@ -37,7 +37,7 @@ class CameraIMX519(CameraConnection):
         # return CameraConnection.connection(self)
 
 class CameraESP32CAM(CameraConnection):
-    source = 'http://192.168.0.100:81/stream?var=framesize&VAL=13'
+    source = 'http://192.168.0.115:81/stream'
 
 class CameraAnalog(CameraConnection):
     source = '/dev/video2'
@@ -79,7 +79,7 @@ class Camera:
         self.ret, self.frame = self.cap.read()
 
        
-    def capture_images_and_metadata(self, drone: Drone,  fileManager: FileManager, aruco_detector: ArucoDetector, alt, type, num_images=3, pause_time=2):
+    def capture_images_and_metadata(self, drone: Drone,  fileManager: FileManager, aruco_detector: ArucoDetector, alt, type, num_images=30, pause_time=0.5):
        
         report = DetectionsByAltReport()
         

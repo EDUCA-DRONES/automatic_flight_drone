@@ -11,7 +11,7 @@ fileManager = FileManager()
 def main():
     camera = Camera()
         
-    camera.initialize_video_capture('esp32')
+    camera.initialize_video_capture('computer')
     
     try:
         while True:

@@ -9,6 +9,7 @@ class DroneConfig:
     def __init__(self) -> None:
         self.GUIDED_MODE = 4
         
+# senha:101263
 class Drone:
     def __init__(self) -> None:
         # self.IP = '127.0.0.1'

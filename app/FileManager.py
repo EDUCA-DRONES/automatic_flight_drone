@@ -4,8 +4,8 @@ import cv2
 
 class FileManager:
     def __init__(self) -> None:
-        self.save_path = 'captured_images_tests_3'
-        self.meta_path = 'metadata_images_tests_3'
+        self.save_path = 'captured_images_tests_4'
+        self.meta_path = 'metadata_images_tests_4'
         self.type_img_dir = ''
         self.type_meta_dir = ''
         self.timestamp = None
